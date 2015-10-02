@@ -72,7 +72,7 @@ func (m *Msg)FromSBS1(s string) error {
 			m.LoggedTimestampUTC = t
 		}
 
-		m.Callsign = r[SBS1Callsign]
+		m.Callsign = strings.TrimSpace(r[SBS1Callsign])
 
 		if (r[SBS1Altitude] != "") {
 			if i,err := strconv.ParseInt(r[SBS1Altitude], 10, 64); err != nil {
