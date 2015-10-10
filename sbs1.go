@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/skypies/geo"
+	"github.com/skypies/date"
 )
 // http://woodair.net/SBS/Article/Barebones42_Socket_Data.htm
 const (
@@ -35,11 +36,11 @@ const (
 )
 
 
+// TODO(abw): TIMEZONES. For now, we just presume PDT :/
 func toTime(d,t string) (time.Time, error) {
-	if t,err := time.Parse("2006/01/02 15:04:05.999999999", d+" "+t); err != nil {
+	if t,err := date.ParseInPdt("2006/01/02 15:04:05.999999999", d+" "+t); err != nil {
 		return time.Now(),err
 	} else {
-		// TODO(abw): TIMEZONES
 		return t,nil
 	}
 }
@@ -64,6 +65,7 @@ func (m *Msg)FromSBS1(s string) error {
 		if t,err := toTime(r[SBS1DateGen], r[SBS1TimeGen]); err != nil {
 			return err
 		} else {
+			
 			m.GeneratedTimestampUTC = t
 		}
 		if t,err := toTime(r[SBS1DateLog], r[SBS1TimeLog]); err != nil {
