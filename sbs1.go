@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/skypies/geo"
-	"github.com/skypies/date"
+	//"github.com/skypies/date"
 )
 // http://woodair.net/SBS/Article/Barebones42_Socket_Data.htm
 const (
@@ -35,16 +35,20 @@ const (
 	SBS1IsOnGround = 21 //	 Flag to indicate ground squat switch is active
 )
 
+// Hack global. Maybe should have a parser struct. Default is for backwards compatibility.
+var TimeLocation = "America/Los_Angeles"  
 
-// TODO(abw): TIMEZONES. For now, we just presume PDT :/
 func toTime(d,t string) (time.Time, error) {
-	if t,err := date.ParseInPdt("2006/01/02 15:04:05.999999999", d+" "+t); err != nil {
-		return time.Now(),err
+	format := "2006/01/02 15:04:05.999999999"
+	value := d+" "+t
+	if loc, err := time.LoadLocation(TimeLocation); err != nil {
+		panic(err)
+	} else if t, err := time.ParseInLocation(format, value, loc); err != nil {
+		return time.Now(), err
 	} else {
-		return t,nil
+		return t, nil
 	}
 }
-
 
 func (m *Msg)FromSBS1(s string) error {
 	ioReader := strings.NewReader(s)
@@ -60,12 +64,10 @@ func (m *Msg)FromSBS1(s string) error {
 			m.SubType = i
 		}
 		m.Icao24 = IcaoId(r[SBS1Icao24])
-
 		
 		if t,err := toTime(r[SBS1DateGen], r[SBS1TimeGen]); err != nil {
 			return err
-		} else {
-			
+		} else {			
 			m.GeneratedTimestampUTC = t
 		}
 		if t,err := toTime(r[SBS1DateLog], r[SBS1TimeLog]); err != nil {
@@ -75,6 +77,7 @@ func (m *Msg)FromSBS1(s string) error {
 		}
 
 		m.Callsign = strings.TrimSpace(r[SBS1Callsign])
+		m.Squawk = strings.TrimSpace(r[SBS1Squawk])
 
 		if (r[SBS1Altitude] != "") {
 			if i,err := strconv.ParseInt(r[SBS1Altitude], 10, 64); err != nil {
@@ -88,6 +91,20 @@ func (m *Msg)FromSBS1(s string) error {
 				return err
 			} else {
 				m.GroundSpeed = i
+			}
+		}
+		if (r[SBS1VerticalRate] != "") {
+			if i,err := strconv.ParseInt(r[SBS1VerticalRate], 10, 64); err != nil {
+				return err
+			} else {
+				m.VerticalRate = i
+			}
+		}
+		if (r[SBS1Track] != "") {
+			if i,err := strconv.ParseInt(r[SBS1Track], 10, 64); err != nil {
+				return err
+			} else {
+				m.Track = i
 			}
 		}
 		
