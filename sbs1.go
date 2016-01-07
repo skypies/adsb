@@ -2,6 +2,7 @@ package adsb
 
 import (
 	"encoding/csv"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -38,7 +39,7 @@ const (
 // Hack global. Maybe should have a parser struct. Default is for backwards compatibility.
 var TimeLocation = "America/Los_Angeles"  
 
-func toTime(d,t string) (time.Time, error) {
+func toTimeUTC(d,t string) (time.Time, error) {
 	format := "2006/01/02 15:04:05.999999999"
 	value := d+" "+t
 	if loc, err := time.LoadLocation(TimeLocation); err != nil {
@@ -56,6 +57,10 @@ func (m *Msg)FromSBS1(s string) error {
 	if r,err := csvReader.Read(); err != nil {
 		return err
 	} else {
+		if len(r) != 22 {
+			return fmt.Errorf("Message was corrupt; has %d fields", len(r))
+		}
+
 		// Dear god. If any block of code ever needed try/catch ...
 		m.Type = r[SBS1Message]
 		if i,err := strconv.ParseInt(r[SBS1Transmission], 10, 64); err != nil {
@@ -65,12 +70,12 @@ func (m *Msg)FromSBS1(s string) error {
 		}
 		m.Icao24 = IcaoId(r[SBS1Icao24])
 		
-		if t,err := toTime(r[SBS1DateGen], r[SBS1TimeGen]); err != nil {
+		if t,err := toTimeUTC(r[SBS1DateGen], r[SBS1TimeGen]); err != nil {
 			return err
 		} else {			
 			m.GeneratedTimestampUTC = t
 		}
-		if t,err := toTime(r[SBS1DateLog], r[SBS1TimeLog]); err != nil {
+		if t,err := toTimeUTC(r[SBS1DateLog], r[SBS1TimeLog]); err != nil {
 			return err
 		} else {
 			m.LoggedTimestampUTC = t
