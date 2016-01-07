@@ -46,7 +46,7 @@ func toTime(d,t string) (time.Time, error) {
 	} else if t, err := time.ParseInLocation(format, value, loc); err != nil {
 		return time.Now(), err
 	} else {
-		return t, nil
+		return t.UTC(), nil
 	}
 }
 
