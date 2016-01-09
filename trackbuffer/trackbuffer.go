@@ -55,7 +55,7 @@ func (tb *TrackBuffer)AddMessage(m *adsb.CompositeMsg) {
 	track.Messages = append(track.Messages, m)
 }
 
-func (tb *TrackBuffer)Flush(flushFunc func ([]*adsb.CompositeMsg)) {
+func (tb *TrackBuffer)Flush(flushChan chan<- []*adsb.CompositeMsg) {
 	toRemove := []adsb.IcaoId{}
 	
 	for id,_ := range tb.Tracks {
@@ -66,6 +66,6 @@ func (tb *TrackBuffer)Flush(flushFunc func ([]*adsb.CompositeMsg)) {
 
 	for _,t := range tb.RemoveTracks(toRemove) {
 		sort.Sort(adsb.CompositeMsgPtrByTimeAsc(t.Messages))
-		flushFunc(t.Messages)
+		flushChan <- t.Messages
 	}
 }
