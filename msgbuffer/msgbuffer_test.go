@@ -1,3 +1,4 @@
+// go test -v github.com/skypies/adsb/msgbuffer
 package msgbuffer
 
 import (
@@ -80,7 +81,6 @@ func TestAdd(t *testing.T) {
 	// fmt.Printf("%s", mb)
 }
 
-
 func TestAgeOutQuietSenders(t *testing.T) {
 	mb := NewMsgBuffer()
 	messages := msgs(maybeAddSBS)
@@ -114,13 +114,9 @@ func TestAgeOutQuietSenders(t *testing.T) {
 func TestFlush(t *testing.T) {
 	mb := NewMsgBuffer()
 
-	callbackBuf := []*adsb.CompositeMsg{}
-	callbackN := 0
-	mb.FlushFunc = func(msgs []*adsb.CompositeMsg) {
-		callbackBuf = append(callbackBuf, msgs...)
-		callbackN++
-		// fmt.Printf("Callback is called ! With %d messages\n", len(msgs))
-	}
+	ch := make(chan []*adsb.CompositeMsg, 3)
+
+	mb.FlushChannel = ch
 	mb.MaxMessageAgeSeconds = 0 // Immediate dispatch
 	
 	messages :=  msgs(maybeAddSBS)
@@ -129,6 +125,5 @@ func TestFlush(t *testing.T) {
 		mb.Add(&msg)
 	}
 
-	if callbackN != 2 { t.Errorf("callback not invoked twice") }
-	if len(callbackBuf) != 2 { t.Errorf("did not find two messages via callback") }
+	if len(ch) != 2 { t.Errorf("channel does not have two items") }
 }

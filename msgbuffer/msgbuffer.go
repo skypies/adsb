@@ -7,8 +7,8 @@ It caches useful data from previous messages, and generates
 'composite' output messages with full data (i.e. every output packet
 gets a callsign).
 
-When the messages are at risk of getting stale, it will invoke the
-supplied callback to flush them.
+When a maximum age limit is reached, the slice of accumulated messages
+are sent down a channel.
 
 It contains enough memory housekeeping to be used indefinitely.
 
@@ -56,14 +56,13 @@ func (s ADSBSender)String() string {
 // {{{ MsgBuffer{}
 
 type MsgBuffer struct {
-	FlushFunc func([]*adsb.CompositeMsg)
-
 	MaxMessageAgeSeconds int64   // If we've held a message for more than this, flush the buffer
 	MaxQuietTimeSeconds int64 // If an aircraft sends no messages for more than this, remove it
 	Senders    map[adsb.IcaoId]*ADSBSender // Which senders we're currently getting data from
 
 	Messages []*adsb.CompositeMsg  // The actual buffer
 
+	FlushChannel chan<- []*adsb.CompositeMsg
 	lastAgeOut time.Time
 }
 
@@ -80,11 +79,7 @@ func (mb MsgBuffer)String() string {
 // {{{ NewMsgBuffer
 
 func NewMsgBuffer() *MsgBuffer {
-	dumbFunc := func(msgs []*adsb.CompositeMsg) {
-		fmt.Printf("MsgBuffer flushed %d messages (default FlushFunc)\n", len(msgs))
-	}
 	return &MsgBuffer{
-		FlushFunc: dumbFunc,
 		MaxMessageAgeSeconds: 30,
 		MaxQuietTimeSeconds: 360,
 		Senders: make(map[adsb.IcaoId]*ADSBSender),
@@ -169,12 +164,12 @@ func (mb *MsgBuffer)ageOutQuietSenders() (removed int64) {
 // {{{ MsgBuffer.flush
 
 func (mb *MsgBuffer)flush() {
-	msgsToFlush := mb.Messages
+	if mb.FlushChannel != nil {
+		mb.FlushChannel <- mb.Messages
+	}
 
+	// Reset the accumulator
 	mb.Messages = []*adsb.CompositeMsg{}
-	// Now, the only reference to the messages we're flushing is in msgsToFlush
-
-	mb.FlushFunc(msgsToFlush) // Spawn goroutine here ? Or expect caller to handle all that ?
 }
 
 // }}}
