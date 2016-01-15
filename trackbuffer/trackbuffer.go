@@ -55,6 +55,7 @@ func (tb *TrackBuffer)AddMessage(m *adsb.CompositeMsg) {
 	track.Messages = append(track.Messages, m)
 }
 
+// Flushing should be automatic and internal, not explicit like this.
 func (tb *TrackBuffer)Flush(flushChan chan<- []*adsb.CompositeMsg) {
 	toRemove := []adsb.IcaoId{}
 	

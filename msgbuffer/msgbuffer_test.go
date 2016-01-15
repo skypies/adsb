@@ -96,7 +96,7 @@ func TestAgeOutQuietSenders(t *testing.T) {
 	for k,_ := range mb.Senders { id = k }
 
 	// Rig time - just before the age out window
-	offset := time.Second * time.Duration(-1 * (mb.MaxQuietTimeSeconds - 5))
+	offset := -1 * mb.MaxQuietTime - 5
 	mb.Senders[id].LastSeen = mb.Senders[id].LastSeen.Add(offset)
 	mb.Add(&unrelatedMsg) // Send a message, to trigger ageout
 	if len(mb.Senders) != 1 { t.Errorf("aged out too soon ?") }
@@ -117,7 +117,7 @@ func TestFlush(t *testing.T) {
 	ch := make(chan []*adsb.CompositeMsg, 3)
 
 	mb.FlushChannel = ch
-	mb.MaxMessageAgeSeconds = 0 // Immediate dispatch
+	mb.MaxMessageAge = 0 // Immediate dispatch
 	
 	messages :=  msgs(maybeAddSBS)
 	messages = append(messages, messages[len(messages)-1]) // Let's have two position packets to flush

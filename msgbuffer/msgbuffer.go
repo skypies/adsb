@@ -15,7 +15,7 @@ It contains enough memory housekeeping to be used indefinitely.
 Sample usage:
 
     mb := msgbuffer.NewMsgBuffer()
-    mb.MaxMessageAgeSeconds = 0  // How long to wait before flushing; 0==no wait
+    mb.MaxMessageAge = time.Second * 0  // How long to wait before flushing; 0==no wait
     mb.FlushFunc = func(msgs []*adsb.CompositeMsg) {
       fmt.Printf("Just flushed %d messages\n", len(msgs))
     }
@@ -56,19 +56,21 @@ func (s ADSBSender)String() string {
 // {{{ MsgBuffer{}
 
 type MsgBuffer struct {
-	MaxMessageAgeSeconds int64   // If we've held a message for more than this, flush the buffer
-	MaxQuietTimeSeconds int64 // If an aircraft sends no messages for more than this, remove it
-	Senders    map[adsb.IcaoId]*ADSBSender // Which senders we're currently getting data from
+	MinPublishInterval time.Duration  // Regardless of all else, don't publish faster than this
+	MaxMessageAge      time.Duration  // If we've held a message for more than this, flush the buffer
+	MaxQuietTime       time.Duration  // If a sender sends no messages for this long, remove it
 
-	Messages []*adsb.CompositeMsg  // The actual buffer
+	Senders            map[adsb.IcaoId]*ADSBSender // Alive things we're currently getting data from
+	Messages        []*adsb.CompositeMsg           // The actual buffer of messages
 
-	FlushChannel chan<- []*adsb.CompositeMsg
-	lastAgeOut time.Time
+	FlushChannel       chan<- []*adsb.CompositeMsg
+	lastFlush          time.Time
+	lastAgeOut         time.Time
 }
 
 func (mb MsgBuffer)String() string {
-	s := fmt.Sprintf("--{ MsgBuffer (maxage=%d, maxwait=%d) }--\n",
-		mb.MaxMessageAgeSeconds, mb.MaxQuietTimeSeconds)
+	s := fmt.Sprintf("--{ MsgBuffer (maxage=%s, maxwait=%s, minpub=%s) }--\n",
+		mb.MaxMessageAge, mb.MaxQuietTime, mb.MinPublishInterval)
 	for k,sender := range mb.Senders { s += fmt.Sprintf(" - %s %s\n", k, sender) }
 	for i,m := range mb.Messages { s += fmt.Sprintf("[%02d] %s\n", i, m) }
 	return s
@@ -80,8 +82,9 @@ func (mb MsgBuffer)String() string {
 
 func NewMsgBuffer() *MsgBuffer {
 	return &MsgBuffer{
-		MaxMessageAgeSeconds: 30,
-		MaxQuietTimeSeconds: 360,
+		MinPublishInterval:  time.Second * 5,
+		MaxMessageAge:       time.Second * 30,
+		MaxQuietTime:        time.Second * 360,
 		Senders: make(map[adsb.IcaoId]*ADSBSender),
 	}
 }
@@ -151,7 +154,7 @@ func (mb *MsgBuffer)ageOutQuietSenders() (removed int64) {
 	mb.lastAgeOut = time.Now()
 
 	for id,_ := range mb.Senders {
-		if time.Since(mb.Senders[id].LastSeen) >= time.Second * time.Duration(mb.MaxQuietTimeSeconds) {
+		if time.Since(mb.Senders[id].LastSeen) >= mb.MaxQuietTime {
 			delete(mb.Senders, id)
 			removed++
 		}
@@ -170,6 +173,7 @@ func (mb *MsgBuffer)flush() {
 
 	// Reset the accumulator
 	mb.Messages = []*adsb.CompositeMsg{}
+	mb.lastFlush = time.Now()
 }
 
 // }}}
@@ -197,9 +201,17 @@ func (mb *MsgBuffer)Add(m *adsb.Msg) {
 		}
 	}
 
+	// We use the timestamp in the message to decide when to flush,
+	// rather than the time at which we received the message; this is to
+	// deliver a better end-to-end QoS for message delivery.
+
+	// But stale messages can arrive, with timestamps from the past;
+	// they would always trigger a flush, and flushing every message
+	// slows things down (so we never ever catch up again :().
+	// So we also enforce a minimum interval between flushes.
 	if len(mb.Messages) > 0 {
 		t := mb.Messages[0].GeneratedTimestampUTC
-		if time.Since(t) >= (time.Second * time.Duration(mb.MaxMessageAgeSeconds)) {
+		if time.Since(t) >= mb.MaxMessageAge && time.Since(mb.lastFlush) >= mb.MinPublishInterval {
 			mb.flush()
 		}
 	}

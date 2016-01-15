@@ -98,18 +98,18 @@ func (m *Msg)FromSBS1(s string) error {
 				m.GroundSpeed = i
 			}
 		}
-		if (r[SBS1VerticalRate] != "") {
-			if i,err := strconv.ParseInt(r[SBS1VerticalRate], 10, 64); err != nil {
-				return err
-			} else {
-				m.VerticalRate = i
-			}
-		}
 		if (r[SBS1Track] != "") {
 			if i,err := strconv.ParseInt(r[SBS1Track], 10, 64); err != nil {
 				return err
 			} else {
 				m.Track = i
+			}
+		}
+		if (r[SBS1VerticalRate] != "") {
+			if i,err := strconv.ParseInt(r[SBS1VerticalRate], 10, 64); err != nil {
+				return err
+			} else {
+				m.VerticalRate = i
 			}
 		}
 		
@@ -126,4 +126,33 @@ func (m *Msg)FromSBS1(s string) error {
 		}
 	}
 	return nil
+}
+
+func (m *Msg)ToSBS1() string {
+	r := make([]string, 22)
+
+	r[SBS1Message]      = m.Type
+	r[SBS1Transmission] = fmt.Sprintf("%d", m.SubType)
+	//r[SBS1Session]      = "" // = 2 // ID	 Database Session record number
+	//r[SBS1AircraftID] = "" // = 3 //	 Database Aircraft record number
+	r[SBS1Icao24]       = string(m.Icao24)
+	//r[SBS1FlightID] = "" // = 5 //	 Database Flight record number
+	r[SBS1DateGen]      = m.GeneratedTimestampUTC.Format("2006/01/02")
+	r[SBS1TimeGen]      = m.GeneratedTimestampUTC.Format("15:04:05.999999999")
+	r[SBS1DateLog]      = m.LoggedTimestampUTC.Format("2006/01/02")
+	r[SBS1TimeLog]      = m.LoggedTimestampUTC.Format("15:04:05.999999999")
+	r[SBS1Callsign]     = m.Callsign
+	r[SBS1Altitude]     = fmt.Sprintf("%d", m.Altitude)
+	r[SBS1GroundSpeed]  = fmt.Sprintf("%d", m.GroundSpeed)
+	r[SBS1Track]        = fmt.Sprintf("%d", m.Track)
+	r[SBS1Latitude]     = fmt.Sprintf("%.5f", m.Position.Lat)  // Too much precision ?
+	r[SBS1Longitude]    = fmt.Sprintf("%.5f", m.Position.Long)
+	r[SBS1VerticalRate] = fmt.Sprintf("%d", m.VerticalRate)
+	r[SBS1Squawk]       = m.Squawk
+	//r[SBS1AlertSquawkChange] = "" // = 18 // (Squawk change)	 Flag to indicate squawk has changed.
+	//r[SBS1Emergency] = "" // = 19 //	 Flag to indicate emergency code has been set
+	//r[SBS1SPI] = "" // = 20 // (Ident)	 Flag to indicate transponder Ident has been activated.
+	//r[SBS1IsOnGround] = "" // = 21 //	 Flag to indicate ground squat switch is active
+
+	return strings.Join(r, ",")
 }
