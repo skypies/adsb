@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/skypies/geo"
-	//"github.com/skypies/date"
+	//"github.com/skypies/util/date"
 )
 // http://woodair.net/SBS/Article/Barebones42_Socket_Data.htm
 const (
@@ -36,8 +36,8 @@ const (
 	SBS1IsOnGround = 21 //	 Flag to indicate ground squat switch is active
 )
 
-// Hack global. Maybe should have a parser struct. Default is for backwards compatibility.
-var TimeLocation = "America/Los_Angeles"  
+// Hack global. Maybe should have a parser struct.
+var TimeLocation = "UTC" // "America/Los_Angeles"  
 
 func toTimeUTC(d,t string) (time.Time, error) {
 	format := "2006/01/02 15:04:05.999999999"
