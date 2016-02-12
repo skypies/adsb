@@ -117,7 +117,7 @@ func TestFlush(t *testing.T) {
 	ch := make(chan []*adsb.CompositeMsg, 3)
 
 	mb.FlushChannel = ch
-	mb.MaxMessageAge = 0 // Immediate dispatch
+	mb.MaxMessageAge,mb.MinPublishInterval = 0,0 // Immediate dispatch
 	
 	messages :=  msgs(maybeAddSBS)
 	messages = append(messages, messages[len(messages)-1]) // Let's have two position packets to flush
@@ -125,5 +125,5 @@ func TestFlush(t *testing.T) {
 		mb.Add(&msg)
 	}
 
-	if len(ch) != 2 { t.Errorf("channel does not have two items") }
+	if len(ch) != 2 { t.Errorf("channel does not have two items (has %d)", len(ch)) }
 }

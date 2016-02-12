@@ -129,7 +129,7 @@ func (s *ADSBSender)maybeCreateComposite(m *adsb.Msg) *adsb.CompositeMsg {
 	if !m.HasPosition() {
 		return nil
 	}
-	if s.LastGroundSpeed == 0 || s.LastVerticalSpeed == 0 || s.LastTrack == 0 || s.LastCallsign == "" {
+	if s.LastGroundSpeed == 0 || s.LastTrack == 0 || s.LastCallsign == "" {
 		return nil
 	}
 
