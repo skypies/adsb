@@ -89,6 +89,7 @@ func (m *Msg)FromSBS1(s string) error {
 				return err
 			} else {
 				m.Altitude = i
+				m.hasAltitude = true
 			}
 		}
 		if (r[SBS1GroundSpeed] != "") {
@@ -96,6 +97,7 @@ func (m *Msg)FromSBS1(s string) error {
 				return err
 			} else {
 				m.GroundSpeed = i
+				m.hasGroundSpeed = true
 			}
 		}
 		if (r[SBS1Track] != "") {
@@ -103,6 +105,7 @@ func (m *Msg)FromSBS1(s string) error {
 				return err
 			} else {
 				m.Track = i
+				m.hasTrack = true
 			}
 		}
 		if (r[SBS1VerticalRate] != "") {
@@ -110,6 +113,7 @@ func (m *Msg)FromSBS1(s string) error {
 				return err
 			} else {
 				m.VerticalRate = i
+				m.hasVerticalRate = true
 			}
 		}
 		

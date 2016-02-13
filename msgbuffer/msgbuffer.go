@@ -15,7 +15,8 @@ It contains enough memory housekeeping to be used indefinitely.
 Sample usage:
 
     mb := msgbuffer.NewMsgBuffer()
-    mb.MaxMessageAge = time.Second * 0  // How long to wait before flushing; 0==no wait
+    mb.MaxMessageAge      = time.Second * 0  // How long to wait before flushing; 0==no wait
+    mb.MinPublishInterval = time.Second * 0  // How long must wait between flushes; 0==no wait
     mb.FlushFunc = func(msgs []*adsb.CompositeMsg) {
       fmt.Printf("Just flushed %d messages\n", len(msgs))
     }
@@ -99,6 +100,7 @@ func NewMsgBuffer() *MsgBuffer {
 func (s *ADSBSender)updateFromMsg(m *adsb.Msg) {
 	s.LastSeen = time.Now().UTC()
 	if m.SubType == 1 {
+		// TODO: move this to m.hasCallsign()
 		// MSG,1 - the callsign/ident subtype - is sometimes blank. But we
 		// don't really want to confuse flights that have a purposefully
 		// blank callsign with those for yet we've yet to receive a MSG,1.
@@ -107,13 +109,13 @@ func (s *ADSBSender)updateFromMsg(m *adsb.Msg) {
 		if m.Callsign != ""     { s.LastCallsign      = m.Callsign }
 		
 	} else if m.SubType == 2 {
-		if m.GroundSpeed != 0   { s.LastGroundSpeed   = m.GroundSpeed }
-		if m.Track != 0         { s.LastTrack         = m.Track }
+		if m.HasGroundSpeed()   { s.LastGroundSpeed   = m.GroundSpeed }
+		if m.HasTrack()         { s.LastTrack         = m.Track }
 
 	} else if m.SubType == 4 {
-		if m.GroundSpeed != 0   { s.LastGroundSpeed   = m.GroundSpeed }
-		if m.VerticalRate != 0  { s.LastVerticalSpeed = m.VerticalRate }
-		if m.Track != 0         { s.LastTrack         = m.Track }
+		if m.HasGroundSpeed()   { s.LastGroundSpeed   = m.GroundSpeed }
+		if m.HasVerticalRate()  { s.LastVerticalSpeed = m.VerticalRate }
+		if m.HasTrack()         { s.LastTrack         = m.Track }
 
 	} else if m.SubType == 6 {
 		if m.Squawk != ""       { s.LastSquawk        = m.Squawk }
