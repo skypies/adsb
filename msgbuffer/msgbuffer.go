@@ -99,27 +99,43 @@ func NewMsgBuffer() *MsgBuffer {
 // http://woodair.net/SBS/Article/Barebones42_Socket_Data.htm
 func (s *ADSBSender)updateFromMsg(m *adsb.Msg) {
 	s.LastSeen = time.Now().UTC()
-	if m.SubType == 1 {
-		// TODO: move this to m.hasCallsign()
-		// MSG,1 - the callsign/ident subtype - is sometimes blank. But we
-		// don't really want to confuse flights that have a purposefully
-		// blank callsign with those for yet we've yet to receive a MSG,1.
-		// So we use a magic string instead.
-		if m.Callsign == ""     { s.LastCallsign      = "_._._._." }
-		if m.Callsign != ""     { s.LastCallsign      = m.Callsign }
+
+	// If the message had any of the optional fields, cache the value for later
+	if m.HasCallsign()      {
+		if len(m.Callsign) > 0 {
+			s.LastCallsign = m.Callsign
+		} else {
+			s.LastCallsign = "_._._._." // Our nil value :/
+		}
+	}
+	if m.HasSquawk()        { s.LastSquawk        = m.Squawk }
+	if m.HasGroundSpeed()   { s.LastGroundSpeed   = m.GroundSpeed }
+	if m.HasTrack()         { s.LastTrack         = m.Track }
+	if m.HasVerticalRate()  { s.LastVerticalSpeed = m.VerticalRate }
+	
+	if m.Type == "MSG_foooo" {
+		if m.SubType == 1 {
+			// TODO: move this to m.hasCallsign()
+			// MSG,1 - the callsign/ident subtype - is sometimes blank. But we
+			// don't really want to confuse flights that have a purposefully
+			// blank callsign with those for yet we've yet to receive a MSG,1.
+			// So we use a magic string instead.
+			if m.Callsign == ""     { s.LastCallsign      = "_._._._." }
+			if m.Callsign != ""     { s.LastCallsign      = m.Callsign }
 		
-	} else if m.SubType == 2 {
-		if m.HasGroundSpeed()   { s.LastGroundSpeed   = m.GroundSpeed }
-		if m.HasTrack()         { s.LastTrack         = m.Track }
+		} else if m.SubType == 2 {
+			if m.HasGroundSpeed()   { s.LastGroundSpeed   = m.GroundSpeed }
+			if m.HasTrack()         { s.LastTrack         = m.Track }
 
-	} else if m.SubType == 4 {
-		if m.HasGroundSpeed()   { s.LastGroundSpeed   = m.GroundSpeed }
-		if m.HasVerticalRate()  { s.LastVerticalSpeed = m.VerticalRate }
-		if m.HasTrack()         { s.LastTrack         = m.Track }
+		} else if m.SubType == 4 {
+			if m.HasGroundSpeed()   { s.LastGroundSpeed   = m.GroundSpeed }
+			if m.HasVerticalRate()  { s.LastVerticalSpeed = m.VerticalRate }
+			if m.HasTrack()         { s.LastTrack         = m.Track }
 
-	} else if m.SubType == 6 {
-		if m.Squawk != ""       { s.LastSquawk        = m.Squawk }
-  }
+		} else if m.SubType == 6 {
+			if m.Squawk != ""       { s.LastSquawk        = m.Squawk }
+		}
+	}
 }
 
 // }}}
@@ -131,9 +147,8 @@ func (s *ADSBSender)maybeCreateComposite(m *adsb.Msg) *adsb.CompositeMsg {
 	if !m.HasPosition() {
 		return nil
 	}
-	if s.LastGroundSpeed == 0 || s.LastTrack == 0 || s.LastCallsign == "" {
-		return nil
-	}
+
+	//if s.LastGroundSpeed == 0 || s.LastTrack == 0 || s.LastCallsign == "" { return nil }
 
 	cm := adsb.CompositeMsg{Msg:*m}  // Clone the input into the embedded struct
 

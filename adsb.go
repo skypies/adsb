@@ -50,18 +50,26 @@ type Msg struct {
 	SPI bool `json:"-"`// = 20 // (Ident)	 Flag to indicate transponder Ident has been activated.
 	IsOnGround bool `json:"-"`// = 21 //	 Flag to indicate ground squat switch is active
 
+	// These fields are present for extended basestation format messages (i.e. MLAT)
+	NumStations int64 `json:"-"`
+	//ErrorEstimate int64 `json:"-"`  // Not sure if this is a float or an int, or what it means
+	
 	// Flags filled (and only valid) during initial SBS parsing, for fields not
 	// always present
 	hasAltitude     bool
-	//hasCallsign     bool
+	hasCallsign     bool
+	hasSquawk       bool
 	hasGroundSpeed  bool
 	hasTrack        bool
 	hasPosition     bool
 	hasVerticalRate bool
 }
 
+func (m Msg)IsMLAT() bool { return m.Type == "MLAT" }
+
 //func (m Msg)HasAltitude()     bool { return m.hasAltitude }
-//func (m Msg)HasCallsign()     bool { return m.hasCallsign }
+func (m Msg)HasCallsign()     bool { return m.hasCallsign }
+func (m Msg)HasSquawk()       bool { return m.hasSquawk }
 func (m Msg)HasGroundSpeed()  bool { return m.hasGroundSpeed }
 func (m Msg)HasTrack()        bool { return m.hasTrack }
 func (m Msg)HasPosition()     bool { return m.hasPosition }

@@ -17,12 +17,21 @@ type CompositeMsg struct {
 	ReceiverName  string // Some identifier for the ADS-B receiver that generated this data
 }
 
+// Need to differentiate from 'real' ADSB messages, and synthetic MLAT messages
+func (cm CompositeMsg)DataSystem() string {
+	switch cm.Type {
+	case "MLAT": return "MLAT"
+	case "MSG": return "ADSB"
+	default: return cm.Type
+	}
+}
+
 func (cm CompositeMsg)String() string {
 	pos := fmt.Sprintf(" (%.7f,%.7f)", cm.Position.Lat, cm.Position.Long)
-	return fmt.Sprintf("%s%d+ : %s[%7.7s] %5df, %3dk, %5df/m, %3ddeg, %s @ %s (%s)",
+	return fmt.Sprintf("%s%d+ : %s[%7.7s] %5df, %3dk, %5df/m, %3ddeg, %s @ %s (%s) %s",
 		cm.Type, cm.SubType, cm.Icao24, cm.Callsign,
 		cm.Altitude, cm.GroundSpeed, cm.VerticalRate, cm.Track, pos, cm.GeneratedTimestampUTC,
-		cm.ReceiverName)
+		cm.ReceiverName, cm.DataSystem())
 }
 
 type CompositeMsgPtrByTimeAsc []*CompositeMsg

@@ -10,7 +10,9 @@ import (
 	"github.com/skypies/geo"
 	//"github.com/skypies/util/date"
 )
+
 // http://woodair.net/SBS/Article/Barebones42_Socket_Data.htm
+// https://github.com/mutability/mlat-client/blob/master/mlat/client/output.py#L196
 const (
 	SBS1Message = 0 // type	 (MSG, STA, ID, AIR, SEL or CLK)
 	SBS1Transmission = 1 // Type	 MSG sub types 1 to 8. Not used by other message types.
@@ -34,6 +36,12 @@ const (
 	SBS1Emergency = 19 //	 Flag to indicate emergency code has been set
 	SBS1SPI = 20 // (Ident)	 Flag to indicate transponder Ident has been activated.
 	SBS1IsOnGround = 21 //	 Flag to indicate ground squat switch is active
+
+	// The extra fields for ext_basestation (used for MLAT output)
+	// https://github.com/mutability/mlat-client/blob/master/mlat/client/output.py#L264
+	ExtSBSNumStations = 22
+	// 23 left blank for now
+	ExtSBSErrorEstimate = 24
 )
 
 // Hack global. Maybe should have a parser struct.
@@ -57,7 +65,9 @@ func (m *Msg)FromSBS1(s string) error {
 	if r,err := csvReader.Read(); err != nil {
 		return err
 	} else {
-		if len(r) != 22 {
+
+		// ext_basestation format has 25 fields ...
+		if len(r) != 22 && len(r) != 25 {
 			return fmt.Errorf("Message was corrupt; has %d fields", len(r))
 		}
 
@@ -81,9 +91,15 @@ func (m *Msg)FromSBS1(s string) error {
 			m.LoggedTimestampUTC = t
 		}
 
-		m.Callsign = strings.TrimSpace(r[SBS1Callsign])
-		m.Squawk = strings.TrimSpace(r[SBS1Squawk])
-
+		if len(r[SBS1Callsign]) > 0 {
+			m.hasCallsign = true
+			m.Callsign = strings.TrimSpace(r[SBS1Callsign]) // This may truncate to the empty string.
+		}
+		if len(r[SBS1Squawk]) > 0 {
+			m.hasSquawk = true
+			m.Squawk = strings.TrimSpace(r[SBS1Squawk])
+		}
+		
 		if (r[SBS1Altitude] != "") {
 			if i,err := strconv.ParseInt(r[SBS1Altitude], 10, 64); err != nil {
 				return err
@@ -123,10 +139,25 @@ func (m *Msg)FromSBS1(s string) error {
 				return err
 			} else if long,err := strconv.ParseFloat(r[SBS1Longitude], 64); err != nil {
 				return err
-			} else {
+			} else {//if lat!=0.0 && long>0.0 { // Some dodgy data outputs nil locations as "0.00,0.00"
 				m.Position = geo.Latlong{lat, long}
 				m.hasPosition = true
 			}
+		}
+
+		// Extended basestation format ?
+		if len(r) == 25 {
+			if (r[ExtSBSNumStations] != "") {
+				if i,err := strconv.ParseInt(r[ExtSBSNumStations], 10, 64); err != nil {
+					m.NumStations = i
+				}
+			}
+			// Not sure what this data type is, omit for now
+			//if (r[ExtSBSErrorEstimate] != "") {
+			//	if i,err := strconv.ParseInt(r[ExtSBSErrorEstimate], 10, 64); err != nil {
+			//		m.ErrorEstimate = i
+			//	}
+			//}
 		}
 	}
 	return nil
@@ -149,8 +180,11 @@ func (m *Msg)ToSBS1() string {
 	r[SBS1Altitude]     = fmt.Sprintf("%d", m.Altitude)
 	r[SBS1GroundSpeed]  = fmt.Sprintf("%d", m.GroundSpeed)
 	r[SBS1Track]        = fmt.Sprintf("%d", m.Track)
-	r[SBS1Latitude]     = fmt.Sprintf("%.5f", m.Position.Lat)  // Too much precision ?
-	r[SBS1Longitude]    = fmt.Sprintf("%.5f", m.Position.Long)
+
+	if m.HasPosition() {
+		r[SBS1Latitude]     = fmt.Sprintf("%.5f", m.Position.Lat)  // Too much precision ?
+		r[SBS1Longitude]    = fmt.Sprintf("%.5f", m.Position.Long)
+	}
 	r[SBS1VerticalRate] = fmt.Sprintf("%d", m.VerticalRate)
 	r[SBS1Squawk]       = m.Squawk
 	//r[SBS1AlertSquawkChange] = "" // = 18 // (Squawk change)	 Flag to indicate squawk has changed.
@@ -158,5 +192,8 @@ func (m *Msg)ToSBS1() string {
 	//r[SBS1SPI] = "" // = 20 // (Ident)	 Flag to indicate transponder Ident has been activated.
 	//r[SBS1IsOnGround] = "" // = 21 //	 Flag to indicate ground squat switch is active
 
+	// May need to do something here ...
+	if m.IsMLAT() {}
+	
 	return strings.Join(r, ",")
 }
