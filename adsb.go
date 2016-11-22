@@ -17,7 +17,7 @@ type IcaoId string
 type Msg struct {
 	// This set of data is basically the SBS1 format, not the ADS-B format.
 	
-	Type string `json:"-"` // = 0 // type	 (MSG, STA, ID, AIR, SEL or CLK). We ignore all but MSG.
+	Type string //`json:"-"` // = 0 // type	 (MSG, STA, ID, AIR, SEL or CLK). We ignore all but MSG.
 	SubType int64 `json:"-"` // = 1 // Type	 MSG sub types 1 to 8. Not used by other message types.
 	// Session = 2 // ID	 Database Session record number
 	// AircraftID = 3 //	 Database Aircraft record number
