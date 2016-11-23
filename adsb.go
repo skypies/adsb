@@ -2,6 +2,7 @@ package adsb
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/skypies/geo"
@@ -66,6 +67,8 @@ type Msg struct {
 }
 
 func (m Msg)IsMLAT() bool { return m.Type == "MLAT" }
+
+func (m Msg)IsMasked() bool { return strings.HasPrefix(string(m.Icao24), "~") }
 
 //func (m Msg)HasAltitude()     bool { return m.hasAltitude }
 func (m Msg)HasCallsign()     bool { return m.hasCallsign }

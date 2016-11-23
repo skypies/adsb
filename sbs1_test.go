@@ -22,6 +22,9 @@ MLAT,3,1,1,A81A3E,1,2016/03/10,18:22:24.115,2016/03/10,18:22:24.115,,21113,399,1
 MLAT,3,1,1,A7BBE9,1,2016/03/10,18:22:24.180,2016/03/10,18:22:24.180,,8901,217,296,37.1378,-122.6959,3,,,,,,,,
 MLAT,3,1,1,AB5024,1,2016/03/10,18:22:24.183,2016/03/10,18:22:24.183,,6628,238,321,37.0451,-121.7235,-818,,,,,,,,
 `
+	maskedsbs = `
+MLAT,3,1,1,~A76E37,1,2016/03/10,18:22:22.989,2016/03/10,18:22:22.989,,28211,497,66,36.8347,-120.4883,1696,,,,,,,,
+`
 )
 
 func TestSBSParsing(t *testing.T) {
@@ -36,6 +39,9 @@ func TestSBSParsing(t *testing.T) {
 		}
 		if m.IsMLAT() {
 			t.Errorf("regular parse is MLAT !")
+		}
+		if m.IsMasked() {
+			t.Errorf("regular parse is Masked !")
 		}
 	}
 }
@@ -59,4 +65,18 @@ func TestExtendedSBSParsing(t *testing.T) {
 	}
 }
 
-	
+func TestMaskededSBSParsing(t *testing.T) {
+	scanner := bufio.NewScanner(strings.NewReader(maskedsbs))
+	for scanner.Scan() {
+		text := scanner.Text()
+		if text == "" { continue } // blank lines
+		fmt.Printf(" --- %s ---\n", text)
+		m := Msg{}
+		if err := m.FromSBS1(text); err != nil {
+			t.Errorf("parse fail on '%s': %v", text, err)
+		}
+		if ! m.IsMasked() {
+			t.Errorf("not Masked !")
+		}
+	}
+}
