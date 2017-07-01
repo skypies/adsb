@@ -49,6 +49,14 @@ func (tb *TrackBuffer)RemoveTracks(icaos []adsb.IcaoId) []*Track{
 	return removed
 }
 
+func (tb *TrackBuffer)Size() int64 {
+	i := 0
+	for _,t := range tb.Tracks {
+		i += len(t.Messages)
+	}
+	return int64(i)
+}
+
 func (tb *TrackBuffer)AddMessage(m *adsb.CompositeMsg) {
 	if _,exists := tb.Tracks[m.Icao24]; exists == false {
 		tb.AddTrack(m.Icao24)
