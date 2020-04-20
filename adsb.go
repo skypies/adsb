@@ -78,6 +78,12 @@ func (m Msg)HasTrack()        bool { return m.hasTrack }
 func (m Msg)HasPosition()     bool { return m.hasPosition }
 func (m Msg)HasVerticalRate() bool { return m.hasVerticalRate }
 
+// We create some ADSB messages outside of this lib, and need to assert these values
+func (m Msg)SetHasGroundSpeed() { m.hasGroundSpeed = true }
+func (m Msg)SetHasTrack()       { m.hasTrack = true }
+func (m Msg)SetHasPosition()    { m.hasPosition =true }
+
+
 func (m Msg)String() string {
 	s := fmt.Sprintf("%s%d : %s", m.Type, m.SubType, m.Icao24)
 	if m.HasPosition() {
