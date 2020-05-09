@@ -8,13 +8,13 @@ import (
 // to identify the content of the message; if two messages have equivalent
 // Signatures, then we can consider them to be identical / duplicates.
 type Signature struct {
-	Pos geo.Latlong
+	Pos    geo.Latlong
 	Icao24 IcaoId
 }
 
-func (m *CompositeMsg)GetSignature() Signature {
+func (m *CompositeMsg) GetSignature() Signature {
 	return Signature{
-		Pos: m.Position,
+		Pos:    m.Position,
 		Icao24: m.Icao24,
 	}
 }

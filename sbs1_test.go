@@ -1,14 +1,14 @@
 // go test -v github.com/skypies/adsb
 package adsb
 
-import(
-	"fmt"
+import (
 	"bufio"
+	"fmt"
 	"strings"
 	"testing"
 )
 
-var(
+var (
 	sbs = `
 MSG,7,1,1,A81BD0,1,2015/11/27,21:31:02.722,2015/11/27,21:31:02.721,,20150,,,,,,,,,,0
 MSG,3,1,1,A81BD0,1,2015/11/27,21:31:03.354,2015/11/27,21:31:03.316,,20125,,,36.69804,-121.86007,,,,,,0
@@ -31,7 +31,9 @@ func TestSBSParsing(t *testing.T) {
 	scanner := bufio.NewScanner(strings.NewReader(sbs))
 	for scanner.Scan() {
 		text := scanner.Text()
-		if text == "" { continue } // blank lines
+		if text == "" {
+			continue
+		} // blank lines
 		m := Msg{}
 		fmt.Printf(" --- %s ---\n", text)
 		if err := m.FromSBS1(text); err != nil {
@@ -50,16 +52,18 @@ func TestExtendedSBSParsing(t *testing.T) {
 	scanner := bufio.NewScanner(strings.NewReader(extsbs))
 	for scanner.Scan() {
 		text := scanner.Text()
-		if text == "" { continue } // blank lines
+		if text == "" {
+			continue
+		} // blank lines
 		fmt.Printf(" --- %s ---\n", text)
 		m := Msg{}
 		if err := m.FromSBS1(text); err != nil {
 			t.Errorf("parse fail on '%s': %v", text, err)
 		}
-		if ! m.IsMLAT() {
+		if !m.IsMLAT() {
 			t.Errorf("extended parse not MLAT !")
 		}
-		if ! m.HasPosition() {
+		if !m.HasPosition() {
 			t.Errorf("extended parse has no position !\n%s\n%s", text, m.ToSBS1())
 		}
 	}
@@ -69,13 +73,15 @@ func TestMaskededSBSParsing(t *testing.T) {
 	scanner := bufio.NewScanner(strings.NewReader(maskedsbs))
 	for scanner.Scan() {
 		text := scanner.Text()
-		if text == "" { continue } // blank lines
+		if text == "" {
+			continue
+		} // blank lines
 		fmt.Printf(" --- %s ---\n", text)
 		m := Msg{}
 		if err := m.FromSBS1(text); err != nil {
 			t.Errorf("parse fail on '%s': %v", text, err)
 		}
-		if ! m.IsMasked() {
+		if !m.IsMasked() {
 			t.Errorf("not Masked !")
 		}
 	}
